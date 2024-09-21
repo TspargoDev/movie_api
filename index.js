@@ -10,6 +10,8 @@ app.use(morgan('combined'));
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+const bodyParser = require('body-parser');
+
 // GET route for /movies
 app.get('/movies', (req, res) => {
 	const topMovies = [
@@ -33,6 +35,64 @@ app.get('/movies', (req, res) => {
 		message: 'Here are the top 10 movies:',
 		movies: topMovies,
 	});
+});
+
+// Get all movies
+app.get('/api/movies', (req, res) => {
+	res.send('GET all movies');
+});
+
+// Get a specific movie by ID
+app.get('/api/movies/:id', (req, res) => {
+	const movieId = req.params.id;
+	res.send(`GET movie with ID: ${movieId}`);
+});
+
+// Add a new movie
+app.post('/api/movies', (req, res) => {
+	res.send('POST new movie');
+});
+
+// Update an existing movie by ID
+app.put('/api/movies/:id', (req, res) => {
+	const movieId = req.params.id;
+	res.send(`PUT update movie with ID: ${movieId}`);
+});
+
+// Delete a movie by ID
+app.delete('/api/movies/:id', (req, res) => {
+	const movieId = req.params.id;
+	res.send(`DELETE movie with ID: ${movieId}`);
+});
+
+// Users API Routes
+
+// Get all users
+app.get('/api/users', (req, res) => {
+	res.send('GET all users');
+});
+
+// Get a specific user by ID
+app.get('/api/users/:id', (req, res) => {
+	const userId = req.params.id;
+	res.send(`GET user with ID: ${userId}`);
+});
+
+// Add a new user
+app.post('/api/users', (req, res) => {
+	res.send('POST new user');
+});
+
+// Update an existing user by ID
+app.put('/api/users/:id', (req, res) => {
+	const userId = req.params.id;
+	res.send(`PUT update user with ID: ${userId}`);
+});
+
+// Delete a user by ID
+app.delete('/api/users/:id', (req, res) => {
+	const userId = req.params.id;
+	res.send(`DELETE user with ID: ${userId}`);
 });
 
 // GET route for /

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>API Documentation</h1>
+
+    <h2>Movies API</h2>
+    <table>
+        <tr>
+            <th>Request</th>
+            <th>URL</th>
+            <th>Response</th>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/api/movies</td>
+            <td>Returns a list of all movies.</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/api/movies/:id</td>
+            <td>Returns details of a specific movie by its ID.</td>
+        </tr>
+        <tr>
+            <td>POST</td>
+            <td>/api/movies</td>
+            <td>Adds a new movie to the database. Expects movie data in the request body.</td>
+        </tr>
+        <tr>
+            <td>PUT</td>
+            <td>/api/movies/:id</td>
+            <td>Updates an existing movie's details by its ID. Expects updated movie data in the request body.</td>
+        </tr>
+        <tr>
+            <td>DELETE</td>
+            <td>/api/movies/:id</td>
+            <td>Deletes a specific movie by its ID.</td>
+        </tr>
+    </table>
+
+    <h2>Users API</h2>
+    <table>
+        <tr>
+            <th>Request</th>
+            <th>URL</th>
+            <th>Response</th>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/api/users</td>
+            <td>Returns a list of all users.</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/api/users/:id</td>
+            <td>Returns details of a specific user by their ID.</td>
+        </tr>
+        <tr>
+            <td>POST</td>
+            <td>/api/users</td>
+            <td>Adds a new user to the database. Expects user data in the request body.</td>
+        </tr>
+        <tr>
+            <td>PUT</td>
+            <td>/api/users/:id</td>
+            <td>Updates an existing user's details by their ID. Expects updated user data in the request body.</td>
+        </tr>
+        <tr>
+            <td>DELETE</td>
+            <td>/api/users/:id</td>
+            <td>Deletes a specific user by their ID.</td>
+        </tr>
+    </table>
+
+</body>
+
+</html>
