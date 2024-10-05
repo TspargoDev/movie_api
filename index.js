@@ -1,17 +1,94 @@
 const express = require('express');
 const morgan = require('morgan');
 const path = require('path');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const Models = require('./models.js');
 const app = express();
 const Movies = Models.Movie;
 const Users = Models.User;
+const passport = require('passport'),
+	LocalStrategy = require('passport-local').Strategy,
+	Models = require('./models.js'),
+	passportJWT = require('passport-jwt');
+
+(Users = Models.User),
+	(JWTStrategy = passportJWT.Strategy),
+	(ExtractJWT = passportJWT.ExtractJwt);
+
+passport.use(
+	new LocalStrategy(
+		{
+			usernameField: 'Username',
+			passwordField: 'Password',
+		},
+		async (username, password, callback) => {
+			console.log(`${username} ${password}`);
+			await Users.findOne({ Username: username })
+				.then((user) => {
+					if (!user) {
+						console.log('incorrect username');
+						return callback(null, false, {
+							message: 'Incorrect username or password.',
+						});
+					}
+					console.log('finished');
+					return callback(null, user);
+				})
+				.catch((error) => {
+					if (error) {
+						console.log(error);
+						return callback(error);
+					}
+				});
+		}
+	)
+);
+
+passport.use(
+	new JWTStrategy(
+		{
+			jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
+			secretOrKey: 'your_jwt_secret',
+		},
+		async (jwtPayload, callback) => {
+			return await Users.findById(jwtPayload._id)
+				.then((user) => {
+					return callback(null, user);
+				})
+				.catch((error) => {
+					return callback(error);
+				});
+		}
+	)
+);
 
 mongoose.connect('mongodb://localhost:8000/cfDB', {
 	useNewUrlParser: true,
 	useUnifiedTopology: true,
 });
+
+module.exports = (router) => {
+	router.post('/login', (req, res) => {
+		passport.authenticate('local', { session: false }, (error, user, info) => {
+			if (error || !user) {
+				return res.status(400).json({
+					message: 'Something is not right',
+					user: user,
+				});
+			}
+			req.login(user, { session: false }, (error) => {
+				if (error) {
+					res.send(error);
+				}
+				let token = generateJWTToken(user.toJSON());
+				return res.json({ user, token });
+			});
+		})(req, res);
+	});
+};
+
 // Use morgan middleware to log requests to the terminal
 app.use(morgan('combined'));
 
@@ -45,6 +122,23 @@ app.get('/movies', (req, res) => {
 	});
 });
 
+let allowedOrigins = ['http://localhost:8080', 'http://testsite.com'];
+
+app.use(
+	cors({
+		origin: (origin, callback) => {
+			if (!origin) return callback(null, true);
+			if (allowedOrigins.indexOf(origin) === -1) {
+				// If a specific origin isn’t found on the list of allowed origins
+				let message =
+					'The CORS policy for this application doesn’t allow access from origin ' +
+					origin;
+				return callback(new Error(message), false);
+			}
+			return callback(null, true);
+		},
+	})
+);
 // Get all movies
 app.get('/api/movies', (req, res) => {
 	res.send('GET all movies');
