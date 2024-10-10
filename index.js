@@ -12,10 +12,20 @@ const passport = require('passport'),
 	LocalStrategy = require('passport-local').Strategy,
 	Models = require('./models.js'),
 	passportJWT = require('passport-jwt');
+const cors = require('cors');
+const bcrypt = require('bcrypt');
+const { check, validationResult } = require('express-validator');
+
+app.use(cors());
 
 (Users = Models.User),
 	(JWTStrategy = passportJWT.Strategy),
 	(ExtractJWT = passportJWT.ExtractJwt);
+
+check(
+	'Username',
+	'Username contains non-alphanumeric characters - not allowed.'
+).isAlphanumeric();
 
 passport.use(
 	new LocalStrategy(
@@ -59,6 +69,39 @@ passport.use(
 				})
 				.catch((error) => {
 					return callback(error);
+				});
+		}
+	)
+);
+
+passport.use(
+	new LocalStrategy(
+		{
+			usernameField: 'Username',
+			passwordField: 'Password',
+		},
+		async (username, password, callback) => {
+			console.log(`${username} ${password}`);
+			await Users.findOne({ Username: username })
+				.then((user) => {
+					if (!user) {
+						console.log('incorrect username');
+						return callback(null, false, {
+							message: 'Incorrect username or password.',
+						});
+					}
+					if (!user.validatePassword(password)) {
+						console.log('incorrect password');
+						return callback(null, false, { message: 'Incorrect password.' });
+					}
+					console.log('finished');
+					return callback(null, user);
+				})
+				.catch((error) => {
+					if (error) {
+						console.log(error);
+						return callback(error);
+					}
 				});
 		}
 	)
@@ -190,32 +233,58 @@ app.get('/api/users/:id', (req, res) => {
   Email: String,
   Birthday: Date
 }*/
-app.post('/users', async (req, res) => {
-	await Users.findOne({ Username: req.body.Username })
-		.then((user) => {
-			if (user) {
-				return res.status(400).send(req.body.Username + 'already exists');
-			} else {
-				Users.create({
-					Username: req.body.Username,
-					Password: req.body.Password,
-					Email: req.body.Email,
-					Birthday: req.body.Birthday,
-				})
-					.then((user) => {
-						res.status(201).json(user);
+app.post(
+	'/users',
+	async (req, res) =>
+		// Validation logic here for request
+		//you can either use a chain of methods like .not().isEmpty()
+		//which means "opposite of isEmpty" in plain english "is not empty"
+		//or use .isLength({min: 5}) which means
+		//minimum value of 5 characters are only allowed
+		[
+			check('Username', 'Username is required').isLength({ min: 5 }),
+			check(
+				'Username',
+				'Username contains non alphanumeric characters - not allowed.'
+			).isAlphanumeric(),
+			check('Password', 'Password is required').not().isEmpty(),
+			check('Email', 'Email does not appear to be valid').isEmail(),
+		],
+	async (req, res) => {
+		// check the validation object for errors
+		let errors = validationResult(req);
+
+		if (!errors.isEmpty()) {
+			return res.status(422).json({ errors: errors.array() });
+		}
+
+		let hashedPassword = Users.hashPassword(req.body.Password);
+		await Users.findOne({ Username: req.body.Username })
+			.then((user) => {
+				if (user) {
+					return res.status(400).send(req.body.Username + 'already exists');
+				} else {
+					Users.create({
+						Username: req.body.Username,
+						Password: hashedPassword,
+						Email: req.body.Email,
+						Birthday: req.body.Birthday,
 					})
-					.catch((error) => {
-						console.error(error);
-						res.status(500).send('Error: ' + error);
-					});
-			}
-		})
-		.catch((error) => {
-			console.error(error);
-			res.status(500).send('Error: ' + error);
-		});
-});
+						.then((user) => {
+							res.status(201).json(user);
+						})
+						.catch((error) => {
+							console.error(error);
+							res.status(500).send('Error: ' + error);
+						});
+				}
+			})
+			.catch((error) => {
+				console.error(error);
+				res.status(500).send('Error: ' + error);
+			});
+	}
+);
 
 // Get all users
 app.get('/users', async (req, res) => {
@@ -399,6 +468,22 @@ let userSchema = mongoose.Schema({
 	FavoriteMovies: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Movie' }],
 });
 
+let userSchema = mongoose.Schema({
+	Username: { type: String, required: true },
+	Password: { type: String, required: true },
+	Email: { type: String, required: true },
+	Birthday: Date,
+	FavoriteMovies: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Movie' }],
+});
+
+userSchema.statics.hashPassword = (password) => {
+	return bcrypt.hashSync(password, 10);
+};
+
+userSchema.methods.validatePassword = function (password) {
+	return bcrypt.compareSync(password, this.Password);
+};
+
 let Movie = mongoose.model('Movie', movieSchema);
 let User = mongoose.model('User', userSchema);
 
@@ -406,7 +491,7 @@ module.exports.Movie = Movie;
 module.exports.User = User;
 
 // Start the server on port 8000
-const port = 8000;
-app.listen(port, () => {
-	console.log(`Server is running on http://localhost:${port}`);
+const port = process.env.PORT || 8000;
+app.listen(port, '0.0.0.0', () => {
+	console.log('Listening on Port ' + port);
 });
