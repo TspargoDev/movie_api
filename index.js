@@ -474,8 +474,8 @@ let User = mongoose.model('User', userSchema);
 module.exports.Movie = Movie;
 module.exports.User = User;
 
-// Start the server on port 8000
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-	console.log(`Server is running on port ${PORT}`);
+let port = process.env.Port || 3000;
+
+app.listen(port, () => {
+	console.log('App is running at port ${port}');
 });
