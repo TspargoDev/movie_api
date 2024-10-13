@@ -140,31 +140,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const bodyParser = require('body-parser');
 
-// GET route for /movies
-app.get('/movies', (req, res) => {
-	const topMovies = [
-		{ title: 'The Shawshank Redemption', year: 1994, rating: 9.3 },
-		{ title: 'The Godfather', year: 1972, rating: 9.2 },
-		{ title: 'The Dark Knight', year: 2008, rating: 9.0 },
-		{ title: 'The Godfather: Part II', year: 1974, rating: 9.0 },
-		{ title: '12 Angry Men', year: 1957, rating: 9.0 },
-		{ title: "Schindler's List", year: 1993, rating: 8.9 },
-		{
-			title: 'The Lord of the Rings: The Return of the King',
-			year: 2003,
-			rating: 8.9,
-		},
-		{ title: 'Pulp Fiction', year: 1994, rating: 8.9 },
-		{ title: 'The Good, the Bad and the Ugly', year: 1966, rating: 8.8 },
-		{ title: 'Fight Club', year: 1999, rating: 8.8 },
-	];
-
-	res.json({
-		message: 'Here are the top 10 movies:',
-		movies: topMovies,
-	});
-});
-
 let allowedOrigins = ['http://localhost:8080', 'http://testsite.com'];
 
 app.use(
@@ -458,14 +433,6 @@ let movieSchema = mongoose.Schema({
 	Actors: [String],
 	ImagePath: String,
 	Featured: Boolean,
-});
-
-let userSchema = mongoose.Schema({
-	Username: { type: String, required: true },
-	Password: { type: String, required: true },
-	Email: { type: String, required: true },
-	Birthday: Date,
-	FavoriteMovies: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Movie' }],
 });
 
 let userSchema = mongoose.Schema({
