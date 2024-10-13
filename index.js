@@ -107,10 +107,6 @@ passport.use(
 	)
 );
 
-mongoose.connect('mongodb://localhost:3000/cfDB', {
-	useNewUrlParser: true,
-	useUnifiedTopology: true,
-});
 mongoose.connect(
 	'mongodb+srv://movieADmin:IWAfTndNfIdEBSCygSGw@cluster0.zucea.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
 	{
@@ -151,36 +147,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const bodyParser = require('body-parser');
 
-<<<<<<< Updated upstream
 let allowedOrigins = ['http://localhost:8080', 'http://testsite.com'];
-=======
-// GET route for /movies
-app.get('/movies', (req, res) => {
-	const topMovies = [
-		{ title: 'The Shawshank Redemption', year: 1994, rating: 9.3 },
-		{ title: 'The Godfather', year: 1972, rating: 9.2 },
-		{ title: 'The Dark Knight', year: 2008, rating: 9.0 },
-		{ title: 'The Godfather: Part II', year: 1974, rating: 9.0 },
-		{ title: '12 Angry Men', year: 1957, rating: 9.0 },
-		{ title: "Schindler's List", year: 1993, rating: 8.9 },
-		{
-			title: 'The Lord of the Rings: The Return of the King',
-			year: 2003,
-			rating: 8.9,
-		},
-		{ title: 'Pulp Fiction', year: 1994, rating: 8.9 },
-		{ title: 'The Good, the Bad and the Ugly', year: 1966, rating: 8.8 },
-		{ title: 'Fight Club', year: 1999, rating: 8.8 },
-	];
-
-	res.json({
-		message: 'Here are the top 10 movies:',
-		movies: topMovies,
-	});
-});
-
-let allowedOrigins = ['http://localhost:3000', 'http://testsite.com'];
->>>>>>> Stashed changes
 
 app.use(
 	cors({
@@ -197,6 +164,7 @@ app.use(
 		},
 	})
 );
+
 // Get all movies
 app.get('/api/movies', (req, res) => {
 	res.send('GET all movies');
