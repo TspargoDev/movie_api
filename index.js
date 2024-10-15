@@ -4,23 +4,21 @@ const path = require('path');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const Models = require('./models.js');
 const app = express();
-const Movies = Models.Movie;
-const Users = Models.User;
+const Models = require('./models.js'),
+	Movie = Models.Movie,
+	User = Models.User;
 const passport = require('passport'),
 	LocalStrategy = require('passport-local').Strategy,
-	Models = require('./models.js'),
 	passportJWT = require('passport-jwt');
-const cors = require('cors');
 const bcrypt = require('bcrypt');
 const { check, validationResult } = require('express-validator');
 
 app.use(cors());
 
-(Users = Models.User),
-	(JWTStrategy = passportJWT.Strategy),
-	(ExtractJWT = passportJWT.ExtractJwt);
+let Users = Models.User,
+	JWTStrategy = passportJWT.Strategy,
+	ExtractJWT = passportJWT.ExtractJwt;
 
 check(
 	'Username',
@@ -114,10 +112,6 @@ mongoose.connect(
 		useUnifiedTopology: true,
 	}
 );
-mongoose.connect(process.env.CONNECTION_URI, {
-	useNewUrlParser: true,
-	useUnifiedTopology: true,
-});
 
 module.exports = (router) => {
 	router.post('/login', (req, res) => {
@@ -144,8 +138,6 @@ app.use(morgan('combined'));
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
-
-const bodyParser = require('body-parser');
 
 let allowedOrigins = ['http://localhost:8080', 'http://testsite.com'];
 
@@ -406,6 +398,14 @@ app.delete('/users/:email', (req, res) => {
 		);
 });
 
+app.get(
+	'/movies',
+	passport.authenticate('jwt', { session: false }),
+	(req, res) => {
+		// Your logic to get movies
+	}
+);
+
 // GET route for /
 app.get('/', (req, res) => {
 	res.send('Welcome to My Movie API! Access /movies to see my top 10 movies.');
@@ -427,55 +427,8 @@ app.use((err, req, res, next) => {
 	});
 });
 
-let movieSchema = mongoose.Schema({
-	Title: { type: String, required: true },
-	Description: { type: String, required: true },
-	Genre: {
-		Name: String,
-		Description: String,
-	},
-	Director: {
-		Name: String,
-		Bio: String,
-	},
-	Actors: [String],
-	ImagePath: String,
-	Featured: Boolean,
-});
-
-let userSchema = mongoose.Schema({
-	Username: { type: String, required: true },
-	Password: { type: String, required: true },
-	Email: { type: String, required: true },
-	Birthday: Date,
-	FavoriteMovies: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Movie' }],
-});
-
-userSchema.statics.hashPassword = (password) => {
-	return bcrypt.hashSync(password, 10);
-};
-
-userSchema.methods.validatePassword = function (password) {
-	return bcrypt.compareSync(password, this.Password);
-};
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-	serverApi: {
-		version: ServerApiVersion.v1,
-		strict: true,
-		deprecationErrors: true,
-	},
-});
-run().catch(console.dir);
-let Movie = mongoose.model('Movie', movieSchema);
-let User = mongoose.model('User', userSchema);
-
-module.exports.Movie = Movie;
-module.exports.User = User;
-
 let port = process.env.Port || 3000;
 
 app.listen(port, () => {
-	console.log('App is running at port ${port}');
+	console.log(`App is running at port ${port}`);
 });
