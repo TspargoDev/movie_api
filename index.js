@@ -105,6 +105,11 @@ passport.use(
 	)
 );
 
+app.use(
+	'/favicon.ico',
+	express.static(path.join(__dirname, 'public', 'favicon.ico'))
+);
+
 mongoose.connect(
 	'mongodb+srv://movieADmin:IWAfTndNfIdEBSCygSGw@cluster0.zucea.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
 	{
@@ -112,6 +117,11 @@ mongoose.connect(
 		useUnifiedTopology: true,
 	}
 );
+
+mongoose.connect(CONNECTION_URI, {
+	useNewUrlParser: true,
+	useUnifiedTopology: true,
+});
 
 module.exports = (router) => {
 	router.post('/login', (req, res) => {
@@ -138,8 +148,6 @@ app.use(morgan('combined'));
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
-
-let allowedOrigins = ['http://localhost:8080', 'http://testsite.com'];
 
 app.use(
 	cors({
