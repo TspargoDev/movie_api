@@ -438,6 +438,6 @@ app.use((err, req, res, next) => {
 const host = '0.0.0.0';
 const port = process.env.PORT || 3000;
 
-app.listen(port, () => {
-	console.log(`App is running at port ${port}`);
+app.listen(port, host, function () {
+	console.log('Server started.......');
 });
