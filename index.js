@@ -118,11 +118,6 @@ mongoose.connect(
 	}
 );
 
-mongoose.connect(CONNECTION_URI, {
-	useNewUrlParser: true,
-	useUnifiedTopology: true,
-});
-
 module.exports = (router) => {
 	router.post('/login', (req, res) => {
 		passport.authenticate('local', { session: false }, (error, user, info) => {
@@ -435,9 +430,10 @@ app.use((err, req, res, next) => {
 	});
 });
 
-const host = '0.0.0.0';
-const port = process.env.PORT || 3000;
-
-app.listen(port, host, function () {
-	console.log('Server started.......');
+app.listen(process.env.PORT || 3000, function () {
+	console.log(
+		'Express server listening on port %d in %s mode',
+		this.address().port,
+		app.settings.env
+	);
 });
