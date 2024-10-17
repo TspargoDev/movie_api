@@ -435,7 +435,8 @@ app.use((err, req, res, next) => {
 	});
 });
 
-let port = process.env.Port || 5001;
+const host = '0.0.0.0';
+const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
 	console.log(`App is running at port ${port}`);
