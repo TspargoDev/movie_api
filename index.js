@@ -339,15 +339,15 @@ app.get('/directors/:name', (req, res) => {
 		);
 });
 
-app.post('/users', (req, res) => {
-	const newUser = new User(req.body);
-	newUser
-		.save()
-		.then((user) => res.status(201).json(user))
-		.catch((err) =>
-			res.status(500).json({ message: 'Error registering user', error: err })
-		);
-});
+//app.post('/users', (req, res) => {
+//const newUser = new User(req.body);
+//newUser
+//.save()
+//.then((user) => res.status(201).json(user))
+//.catch((err) =>
+//res.status(500).json({ message: 'Error registering user', error: err })
+//);
+//});
 
 app.put('/users/:email', (req, res) => {
 	User.findOneAndUpdate(
