@@ -14,9 +14,9 @@ const passport = require('passport'),
 const bcrypt = require('bcrypt');
 const { check, validationResult } = require('express-validator');
 
-app.use(express.json()); // This is crucial for parsing incoming JSON requests
-
 app.use(cors());
+app.use(express.json()); // Parse JSON requests
+app.use(morgan('combined')); // Log requests
 
 let Users = Models.User,
 	JWTStrategy = passportJWT.Strategy,
