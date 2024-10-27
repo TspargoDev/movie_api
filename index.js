@@ -14,7 +14,20 @@ const passport = require('passport'),
 const bcrypt = require('bcrypt');
 const { check, validationResult } = require('express-validator');
 
-app.use(cors());
+app.use(express.json());
+
+app.use(
+	cors({
+		origin: (origin, callback) => {
+			console.log('Origin:', origin); // debug the origin
+			if (!origin || allowedOrigins.includes(origin)) {
+				return callback(null, true);
+			} else {
+				return callback(new Error('Not allowed by CORS'), false);
+			}
+		},
+	})
+);
 
 let Users = Models.User,
 	JWTStrategy = passportJWT.Strategy,
