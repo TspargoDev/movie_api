@@ -16,8 +16,6 @@ const { check, validationResult } = require('express-validator');
 
 app.use(cors());
 
-app.use(express.json());
-
 let Users = Models.User,
 	JWTStrategy = passportJWT.Strategy,
 	ExtractJWT = passportJWT.ExtractJwt;
