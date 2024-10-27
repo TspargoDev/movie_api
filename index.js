@@ -14,6 +14,8 @@ const passport = require('passport'),
 const bcrypt = require('bcrypt');
 const { check, validationResult } = require('express-validator');
 
+app.use(express.json()); // This is crucial for parsing incoming JSON requests
+
 app.use(cors());
 
 let Users = Models.User,
