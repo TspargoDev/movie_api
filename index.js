@@ -15,6 +15,7 @@ const bcrypt = require('bcrypt');
 const { check, validationResult } = require('express-validator');
 
 app.use(cors());
+app.use(express.json()); // Ensure you can parse JSON
 
 let Users = Models.User,
 	JWTStrategy = passportJWT.Strategy,
@@ -187,49 +188,46 @@ app.get('/api/users/:id', (req, res) => {
 app.post(
 	'/users/register',
 	[
-		check('Username', 'Username is required').isLength({ min: 5 }),
-		check(
-			'Username',
-			'Username contains non alphanumeric characters - not allowed.'
-		).isAlphanumeric(),
+		check('Username')
+			.isLength({ min: 5 })
+			.withMessage('Username must be at least 5 characters long.')
+			.isAlphanumeric()
+			.withMessage('Username can only contain letters and numbers.'),
 		check('Password', 'Password is required').not().isEmpty(),
-		check('Email', 'Email does not appear to be valid.').isEmail(),
+		check('Email').isEmail().withMessage('Email is invalid.'),
 		check('Birthday', 'Birthday is required').not().isEmpty(),
 	],
-
 	async (req, res) => {
-		let errors = validationResult(req);
+		const errors = validationResult(req);
 		if (!errors.isEmpty()) {
 			return res.status(422).json({ errors: errors.array() });
 		}
-		let hashedPassword = Users.hashPassword(req.body.Password);
-		await Users.findOne({ Username: req.body.Username })
-			.then((user) => {
-				if (user) {
-					return res.status(400).send(req.body.Username + ' already exists;');
-				} else {
-					Users.create({
-						Username: req.body.Username,
-						Password: hashedPassword,
-						Email: req.body.Email,
-						Birthday: req.body.Birthday,
-					})
-						.then((user) => {
-							res.status(201).json(user);
-						})
-						.catch((error) => {
-							console.error(error);
-							res.status(500).send('Error: ' + error);
-						});
-				}
-			})
-			.catch((error) => {
-				console.error(error);
-				res.status(500).send('Error: ' + error);
+
+		try {
+			let hashedPassword = await bcrypt.hash(req.body.Password, 10);
+			let existingUser = await Users.findOne({ Username: req.body.Username });
+			if (existingUser) {
+				return res.status(400).send(req.body.Username + ' already exists');
+			}
+
+			let newUser = await Users.create({
+				Username: req.body.Username,
+				Password: hashedPassword,
+				Email: req.body.Email,
+				Birthday: req.body.Birthday,
 			});
+
+			return res.status(201).json({
+				Username: newUser.Username,
+				Email: newUser.Email,
+				Birthday: newUser.Birthday,
+			});
+		} catch (error) {
+			console.error('Error during user registration:', error);
+			return res.status(500).send('Error: ' + error);
+		}
 	}
 );
-
 // READ/GET all users in the list
 app.get(
 	'/users',
@@ -409,6 +407,11 @@ app.use((err, req, res, next) => {
 		message: 'An internal server error occurred!',
 		error: err.message,
 	});
+});
+
+app.use((req, res, next) => {
+	console.log('Request Body:', req.body);
+	next();
 });
 
 app.listen(process.env.PORT || 3000, function () {
