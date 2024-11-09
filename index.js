@@ -51,28 +51,23 @@ passport.use(
 			passwordField: 'Password',
 		},
 		async (username, password, callback) => {
-			console.log(`${username} ${password}`);
-			await Users.findOne({ Username: username })
-				.then((user) => {
-					if (!user) {
-						console.log('incorrect username');
-						return callback(null, false, {
-							message: 'Incorrect username or password.',
-						});
-					}
-					if (!user.validatePassword(password)) {
-						console.log('incorrect password');
-						return callback(null, false, { message: 'Incorrect password.' });
-					}
-					console.log('finished');
-					return callback(null, user);
-				})
-				.catch((error) => {
-					if (error) {
-						console.log(error);
-						return callback(error);
-					}
-				});
+			try {
+				const user = await Users.findOne({ Username: username });
+				if (!user) {
+					return callback(null, false, {
+						message: 'Incorrect Username or Password.',
+					});
+				}
+
+				const isPasswordValid = await user.validatePassword(password);
+				if (!isPasswordValid) {
+					return callback(null, false, { message: 'Incorrect Password.' });
+				}
+
+				return callback(null, user);
+			} catch (error) {
+				return callback(error);
+			}
 		}
 	)
 );
@@ -90,25 +85,23 @@ mongoose.connect(
 	}
 );
 
-module.exports = (router) => {
-	router.post('/login', (req, res) => {
-		passport.authenticate('local', { session: false }, (error, user, info) => {
-			if (error || !user) {
-				return res.status(400).json({
-					message: 'Something is not right',
-					user: user,
-				});
-			}
-			req.login(user, { session: false }, (error) => {
-				if (error) {
-					res.send(error);
-				}
-				let token = generateJWTToken(user.toJSON());
-				return res.json({ user, token });
+app.post('/login', (req, res) => {
+	passport.authenticate('local', { session: false }, (error, user, info) => {
+		if (error || !user) {
+			return res.status(400).json({
+				message: 'Something is not right',
+				user: user,
 			});
-		})(req, res);
-	});
-};
+		}
+		req.login(user, { session: false }, (error) => {
+			if (error) {
+				res.send(error);
+			}
+			let token = generateJWTToken(user.toJSON());
+			return res.json({ user, token });
+		});
+	})(req, res);
+});
 
 // Use morgan middleware to log requests to the terminal
 app.use(morgan('combined'));

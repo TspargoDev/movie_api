@@ -1,4 +1,9 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+
+userSchema.methods.validatePassword = function (password) {
+	return bcrypt.compare(password, this.Password);
+};
 
 let movieSchema = mongoose.Schema({
 	Title: { type: String, required: true },
