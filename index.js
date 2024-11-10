@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const Models = require('./models.js');
 const passport = require('passport');
-const passportLocal = require('passport-local');
+const passportLocal = require('passport-local'); // <-- Add this import
 const { check, validationResult } = require('express-validator');
 const bcrypt = require('bcrypt');
 const passportJWT = require('passport-jwt');
@@ -17,7 +17,7 @@ const User = Models.User;
 
 const JWTStrategy = passportJWT.Strategy;
 const ExtractJWT = passportJWT.ExtractJwt;
-const LocalStrategy = passportLocal.Strategy;
+const LocalStrategy = passportLocal.Strategy; // <-- Define LocalStrategy here
 
 // Middleware Setup
 app.use(cors());
@@ -207,6 +207,11 @@ app.post('/login', (req, res, next) => {
 		});
 	})(req, res, next);
 });
+
+// Generate JWT Token Function (Add this function)
+const generateJWTToken = (user) => {
+	return jwt.sign(user, 'your_jwt_secret', { expiresIn: '1h' }); // You can adjust the expiration time
+};
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
