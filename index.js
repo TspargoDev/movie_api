@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const passport = require('passport');
 const { check, validationResult } = require('express-validator');
-const app = require('./auth');
+const { expressApp } = require('./auth');
 
 const app = express();
 const Models = require('./models.js');
