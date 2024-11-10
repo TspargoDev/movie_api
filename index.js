@@ -55,7 +55,7 @@ app.get('/api/movies/:id', async (req, res) => {
 
 // Register a new user
 app.post(
-	'/users/register',
+	'/users',
 	[
 		check('Username')
 			.isLength({ min: 5 })
