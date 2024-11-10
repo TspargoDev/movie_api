@@ -55,7 +55,6 @@ If you want to run the myFlix Movie API locally, follow these steps:
 **Clone the Repository**
 
 ```bash
-Copy code
 git clone https://github.com/yourusername/myflix-api.git
 cd myflix-api
 ```
@@ -63,7 +62,6 @@ cd myflix-api
 **Install Dependencies**
 
 ```bash
-Copy code
 npm install
 ```
 
@@ -75,7 +73,6 @@ npm install
 **Run the Server**
 
 ```bash
-Copy code
 npm start
 ```
 
