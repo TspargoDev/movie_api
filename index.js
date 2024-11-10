@@ -33,13 +33,12 @@ passport.use(
 			secretOrKey: 'your_jwt_secret',
 		},
 		async (jwtPayload, callback) => {
-			return await Users.findById(jwtPayload._id)
-				.then((user) => {
-					return callback(null, user);
-				})
-				.catch((error) => {
-					return callback(error);
-				});
+			try {
+				const user = await Users.findById(jwtPayload._id);
+				return callback(null, user);
+			} catch (error) {
+				return callback(error, null);
+			}
 		}
 	)
 );
@@ -51,37 +50,28 @@ passport.use(
 			passwordField: 'Password',
 		},
 		async (username, password, callback) => {
-			console.log(`${username} ${password}`);
-			await Users.findOne({ Username: username })
-				.then((user) => {
-					if (!user) {
-						console.log('Incorrect Username');
-						return callback(null, false, {
-							message: 'Incorrect Username or Password.',
-						});
-					}
-					if (!user.validatePassword(password)) {
-						console.log('Incorrect Password');
-						return callback(null, false, { message: 'Incorrect password.' });
-					}
-					console.log('finished');
-					return callback(null, user);
-				})
-				.catch((error) => {
-					if (error) {
-						console.log(error);
-						return callback(error);
-					}
-				});
+			try {
+				const user = await Users.findOne({ Username: username });
+				if (!user) {
+					return callback(null, false, {
+						message: 'Incorrect Username or Password.',
+					});
+				}
+				if (!(await user.validatePassword(password))) {
+					return callback(null, false, { message: 'Incorrect Password' });
+				}
+				return callback(null, user);
+			} catch (error) {
+				return callback(error);
+			}
 		}
 	)
 );
 
-app.use(
-	'/favicon.ico',
-	express.static(path.join(__dirname, 'public', 'favicon.ico'))
-);
+app.use(morgan('combined'));
+app.use(express.static(path.join(__dirname, 'public')));
 
+// Database connection
 mongoose.connect(
 	'mongodb+srv://movieADmin:IWAfTndNfIdEBSCygSGw@cluster0.zucea.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
 	{
@@ -90,99 +80,12 @@ mongoose.connect(
 	}
 );
 
-app.post('/login', (req, res, next) => {
-	passport.authenticate('local', { session: false }, (error, user, info) => {
-		if (error || !user) {
-			return res.status(400).json({
-				message: 'Invalid username or password',
-				user: user,
-			});
-		}
-		req.login(user, { session: false }, (error) => {
-			if (error) {
-				return res.send(error);
-			}
-			let token = generateJWTToken(user.toJSON());
-			return res.json({ user, token });
-		});
-	})(req, res, next);
-});
+const generateJWTToken = (user) => {
+	const jwt = require('jsonwebtoken');
+	return jwt.sign(user, 'your_jwt_secret', { expiresIn: '1h' });
+};
 
-// Use morgan middleware to log requests to the terminal
-app.use(morgan('combined'));
-
-// Serve static files from the "public" directory
-app.use(express.static(path.join(__dirname, 'public')));
-
-//app.use(
-//cors({
-//origin: (origin, callback) => {
-//if (!origin) return callback(null, true);
-//if (allowedOrigins.indexOf(origin) === -1) {
-// If a specific origin isn’t found on the list of allowed origins
-//let message =
-//'The CORS policy for this application doesn’t allow access from origin ' +
-//origin;
-//return callback(new Error(message), false);
-//}
-//return callback(null, true);
-//},
-//})
-//);
-
-// Get all movies
-app.get('/api/movies', (req, res) => {
-	res.send('GET all movies');
-});
-
-// Get a specific movie by ID
-app.get('/api/movies/:id', (req, res) => {
-	const movieId = req.params.id;
-	res.send(`GET movie with ID: ${movieId}`);
-});
-
-// Add a new movie
-app.post('/api/movies', (req, res) => {
-	res.send('POST new movie');
-});
-
-// Update an existing movie by ID
-app.put('/api/movies/:id', (req, res) => {
-	const movieId = req.params.id;
-	res.send(`PUT update movie with ID: ${movieId}`);
-});
-
-// Delete a movie by ID
-app.delete('/api/movies/:id', (req, res) => {
-	const movieId = req.params.id;
-	res.send(`DELETE movie with ID: ${movieId}`);
-});
-
-// Users API Routes
-
-// Get all users
-app.get('/api/users', (req, res) => {
-	res.send('GET all users');
-});
-
-// Get a specific user by ID
-app.get('/api/users/:id', (req, res) => {
-	const userId = req.params.id;
-	res.send(`GET user with ID: ${userId}`);
-});
-
-// Add a new user
-//Add a user
-/* We’ll expect JSON in this format
-{
-  ID: Integer,
-  Username: String,
-  Password: String,	 
-  Email: String,
-  Birthday: Date
-}*/
-
-//CREATE new user
+// User Registration
 app.post(
 	'/users/register',
 	[
@@ -226,193 +129,98 @@ app.post(
 		}
 	}
 );
-// READ/GET all users in the list
-app.get(
-	'/users',
-	passport.authenticate('jwt', { session: false }),
-	async (req, res) => {
-		await Users.find()
-			.then((users) => {
-				res.json(users);
-			})
-			.catch((err) => {
-				console.error(err);
-				res.status(500).send('Error: ' + err);
+
+// User Login Route
+app.post('/login', (req, res, next) => {
+	passport.authenticate('local', { session: false }, (error, user, info) => {
+		if (error || !user) {
+			return res.status(400).json({
+				message: 'Invalid username or password',
+				user: user,
 			});
-	}
-);
-// Get all users
-app.get('/users', async (req, res) => {
-	await Users.find()
-		.then((users) => {
-			res.status(201).json(users);
-		})
-		.catch((err) => {
-			console.error(err);
-			res.status(500).send('Error: ' + err);
+		}
+		req.login(user, { session: false }, (error) => {
+			if (error) {
+				return res.send(error);
+			}
+			let token = generateJWTToken(user.toJSON());
+			return res.json({ user, token });
 		});
+	})(req, res, next);
 });
 
-app.get('/users/:Username', async (req, res) => {
-	await Users.findOne({ Username: req.params.Username })
-		.then((user) => {
-			res.json(user);
-		})
-		.catch((err) => {
-			console.error(err);
-			res.status(500).send('Error: ' + err);
-		});
-});
-// Update an existing user by ID
-app.put('/api/users/:id', (req, res) => {
-	const userId = req.params.id;
-	res.send(`PUT update user with ID: ${userId}`);
-});
-
-// Delete a user by ID
-app.delete('/api/users/:id', (req, res) => {
-	const userId = req.params.id;
-	res.send(`DELETE user with ID: ${userId}`);
-});
-
-app.get('/movies', (req, res) => {
-	Movie.find()
-		.then((movies) => res.status(200).json(movies))
-		.catch((err) =>
-			res.status(500).json({ message: 'Error retrieving movies', error: err })
-		);
-});
-
-app.get('/movies/:title', (req, res) => {
-	Movie.findOne({ title: req.params.title })
-		.then((movie) => {
-			if (movie) res.status(200).json(movie);
-			else res.status(404).json({ message: 'Movie not found' });
-		})
-		.catch((err) =>
-			res.status(500).json({ message: 'Error retrieving movie', error: err })
-		);
-});
-
-app.get('/genres/:name', (req, res) => {
-	Movie.findOne({ 'genre.name': req.params.name })
-		.then((movie) => {
-			if (movie) res.status(200).json(movie.genre);
-			else res.status(404).json({ message: 'Genre not found' });
-		})
-		.catch((err) =>
-			res.status(500).json({ message: 'Error retrieving genre', error: err })
-		);
-});
-
-app.get('/directors/:name', (req, res) => {
-	Movie.findOne({ 'director.first_name': req.params.name })
-		.then((movie) => {
-			if (movie) res.status(200).json(movie.director);
-			else res.status(404).json({ message: 'Director not found' });
-		})
-		.catch((err) =>
-			res.status(500).json({ message: 'Error retrieving director', error: err })
-		);
-});
-
-app.post('/users', (req, res) => {
-	const newUser = new User(req.body);
-	newUser
-		.save()
-		.then((user) => res.status(201).json(user))
-		.catch((err) =>
-			res.status(500).json({ message: 'Error registering user', error: err })
-		);
-});
-
-app.put('/users/:email', (req, res) => {
-	User.findOneAndUpdate(
-		{ email: req.params.email },
-		{ $set: req.body },
-		{ new: true }
-	)
-		.then((updatedUser) => res.status(200).json(updatedUser))
-		.catch((err) =>
-			res.status(500).json({ message: 'Error updating user info', error: err })
-		);
-});
-
-app.post('/users/:email/movies/:movieTitle', (req, res) => {
-	User.findOneAndUpdate(
-		{ email: req.params.email },
-		{ $addToSet: { favorite_movies: req.params.movieTitle } },
-		{ new: true }
-	)
-		.then((updatedUser) => res.status(200).json(updatedUser))
-		.catch((err) =>
-			res
-				.status(500)
-				.json({ message: 'Error adding favorite movie', error: err })
-		);
-});
-
-app.delete('/users/:email/movies/:movieTitle', (req, res) => {
-	User.findOneAndUpdate(
-		{ email: req.params.email },
-		{ $pull: { favorite_movies: req.params.movieTitle } },
-		{ new: true }
-	)
-		.then((updatedUser) => res.status(200).json(updatedUser))
-		.catch((err) =>
-			res
-				.status(500)
-				.json({ message: 'Error removing favorite movie', error: err })
-		);
-});
-
-app.delete('/users/:email', (req, res) => {
-	User.findOneAndDelete({ email: req.params.email })
-		.then((deletedUser) => {
-			if (deletedUser)
-				res.status(200).json({ message: 'User deleted successfully' });
-			else res.status(404).json({ message: 'User not found' });
-		})
-		.catch((err) =>
-			res.status(500).json({ message: 'Error deleting user', error: err })
-		);
-});
-
+// Movies API Routes
 app.get(
 	'/movies',
 	passport.authenticate('jwt', { session: false }),
 	(req, res) => {
-		// Your logic to get movies
+		Movie.find()
+			.then((movies) => res.status(200).json(movies))
+			.catch((err) =>
+				res.status(500).json({ message: 'Error retrieving movies', error: err })
+			);
 	}
 );
 
-// GET route for /
-app.get('/', (req, res) => {
-	res.send('Welcome to My Movie API! Access /movies to see my top 10 movies.');
-});
+app.get(
+	'/movies/:title',
+	passport.authenticate('jwt', { session: false }),
+	(req, res) => {
+		Movie.findOne({ title: req.params.title })
+			.then((movie) => {
+				if (movie) res.status(200).json(movie);
+				else res.status(404).json({ message: 'Movie not found' });
+			})
+			.catch((err) =>
+				res.status(500).json({ message: 'Error retrieving movie', error: err })
+			);
+	}
+);
 
-// Simulate an error in one of the routes for testing
-app.get('/error', (req, res) => {
-	throw new Error('This is a simulated server error!');
-});
+// Users Routes
+app.get(
+	'/users',
+	passport.authenticate('jwt', { session: false }),
+	async (req, res) => {
+		try {
+			const users = await Users.find();
+			res.json(users);
+		} catch (err) {
+			console.error(err);
+			res.status(500).send('Error: ' + err);
+		}
+	}
+);
 
-// Error-handling middleware function
+app.get(
+	'/users/:Username',
+	passport.authenticate('jwt', { session: false }),
+	async (req, res) => {
+		try {
+			const user = await Users.findOne({ Username: req.params.Username });
+			if (user) {
+				res.json(user);
+			} else {
+				res.status(404).send('User not found');
+			}
+		} catch (err) {
+			console.error(err);
+			res.status(500).send('Error: ' + err);
+		}
+	}
+);
+
+// Error-handling middleware
 app.use((err, req, res, next) => {
-	console.error(`Error: ${err.message}`); // Log the error to the terminal
-
-	// Send error response to the client
+	console.error(`Error: ${err.message}`); // Log the error
 	res.status(500).json({
 		message: 'An internal server error occurred!',
 		error: err.message,
 	});
 });
 
-app.use((req, res, next) => {
-	console.log('Request Body:', req.body);
-	next();
-});
-
-app.listen(process.env.PORT || 3000, function () {
+// Start server
+app.listen(process.env.PORT || 3000, () => {
 	console.log(
 		'Express server listening on port %d in %s mode',
 		this.address().port,
