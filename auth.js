@@ -2,7 +2,7 @@ const jwtSecret = 'your_jwt_secret'; // This has to be the same key used in the 
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const express = require('express');
-const app = express(); // Express instance
+const expressApp = express(); // Declare and initialize expressApp here
 
 require('./passport'); // Assuming passport.js file is configured properly
 
@@ -15,7 +15,7 @@ let generateJWTToken = (user) => {
 };
 
 /* POST login */
-app.post('/login', (req, res) => {
+expressApp.post('/login', (req, res) => {
 	passport.authenticate('local', { session: false }, (error, user, info) => {
 		if (error || !user) {
 			return res.status(400).json({
@@ -44,5 +44,5 @@ app.post('/login', (req, res) => {
 	})(req, res); // Ensure passport is called with req and res
 });
 
-// Export the app object to index.js
+// Export the expressApp after defining it
 module.exports = expressApp;
