@@ -45,4 +45,4 @@ app.post('/login', (req, res) => {
 });
 
 // Export the app object to index.js
-module.exports = auth;
+module.exports = app;
