@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const passport = require('passport');
 const { check, validationResult } = require('express-validator');
-const { expressApp } = require('./auth');
+const expressApp = require('./auth');
 
 const app = express();
 const Models = require('./models.js');
@@ -23,6 +23,7 @@ app.use(
 	express.static(path.join(__dirname, 'public', 'favicon.ico'))
 );
 app.use(express.static(path.join(__dirname, 'public')));
+expressApp.use(express.static(path.join(__dirname, 'public')));
 
 // Database connection
 mongoose.connect(
