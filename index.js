@@ -4,28 +4,39 @@ const path = require('path');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const app = express();
-const Models = require('./models.js'),
-	Movie = Models.Movie,
-	User = Models.User;
-const passport = require('passport'),
-	LocalStrategy = require('passport-local').Strategy,
-	passportJWT = require('passport-jwt');
-const bcrypt = require('bcrypt');
+const Models = require('./models.js');
+const passport = require('passport');
 const { check, validationResult } = require('express-validator');
+const bcrypt = require('bcrypt');
+const passportJWT = require('passport-jwt');
 
+const app = express();
+const Movie = Models.Movie;
+const User = Models.User;
+
+const JWTStrategy = passportJWT.Strategy;
+const ExtractJWT = passportJWT.ExtractJwt;
+
+// Middleware Setup
 app.use(cors());
-app.use(express.json()); // Ensure you can parse JSON
+app.use(express.json()); // To parse JSON
+app.use(morgan('combined')); // To log requests to the console
+app.use(express.static(path.join(__dirname, 'public'))); // Serve static files
+app.use(
+	'/favicon.ico',
+	express.static(path.join(__dirname, 'public', 'favicon.ico'))
+);
 
-let Users = Models.User,
-	JWTStrategy = passportJWT.Strategy,
-	ExtractJWT = passportJWT.ExtractJwt;
+// MongoDB Connection
+mongoose.connect(
+	'mongodb+srv://movieADmin:IWAfTndNfIdEBSCygSGw@cluster0.zucea.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+	{
+		useNewUrlParser: true,
+		useUnifiedTopology: true,
+	}
+);
 
-check(
-	'Username',
-	'Username contains non-alphanumeric characters - not allowed.'
-).isAlphanumeric();
-
+// Passport Setup
 passport.use(
 	new JWTStrategy(
 		{
@@ -34,10 +45,10 @@ passport.use(
 		},
 		async (jwtPayload, callback) => {
 			try {
-				const user = await Users.findById(jwtPayload._id);
+				const user = await User.findById(jwtPayload._id);
 				return callback(null, user);
 			} catch (error) {
-				return callback(error, null);
+				return callback(error);
 			}
 		}
 	)
@@ -51,14 +62,11 @@ passport.use(
 		},
 		async (username, password, callback) => {
 			try {
-				const user = await Users.findOne({ Username: username });
-				if (!user) {
+				const user = await User.findOne({ Username: username });
+				if (!user || !user.validatePassword(password)) {
 					return callback(null, false, {
 						message: 'Incorrect Username or Password.',
 					});
-				}
-				if (!(await user.validatePassword(password))) {
-					return callback(null, false, { message: 'Incorrect Password' });
 				}
 				return callback(null, user);
 			} catch (error) {
@@ -68,32 +76,48 @@ passport.use(
 	)
 );
 
-app.use(morgan('combined'));
-app.use(express.static(path.join(__dirname, 'public')));
+// Routes
 
-// Database connection
-mongoose.connect(
-	'mongodb+srv://movieADmin:IWAfTndNfIdEBSCygSGw@cluster0.zucea.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-	{
-		useNewUrlParser: true,
-		useUnifiedTopology: true,
+// Base Route
+app.get('/', (req, res) => {
+	res.send('Welcome to My Movie API! Access /movies to see my top 10 movies.');
+});
+
+// Movies Routes
+app.get(
+	'/movies',
+	passport.authenticate('jwt', { session: false }),
+	(req, res) => {
+		Movie.find()
+			.then((movies) => res.status(200).json(movies))
+			.catch((err) =>
+				res.status(500).json({ message: 'Error retrieving movies', error: err })
+			);
 	}
 );
 
-const generateJWTToken = (user) => {
-	const jwt = require('jsonwebtoken');
-	return jwt.sign(user, 'your_jwt_secret', { expiresIn: '1h' });
-};
+app.get('/movies/:id', (req, res) => {
+	const movieId = req.params.id;
+	Movie.findById(movieId)
+		.then((movie) => {
+			if (movie) res.status(200).json(movie);
+			else res.status(404).json({ message: 'Movie not found' });
+		})
+		.catch((err) =>
+			res.status(500).json({ message: 'Error retrieving movie', error: err })
+		);
+});
 
-// User Registration
+// Users Routes
+
+// Register a new user
 app.post(
 	'/users/register',
 	[
 		check('Username')
 			.isLength({ min: 5 })
 			.withMessage('Username must be at least 5 characters long.')
-			.isAlphanumeric()
-			.withMessage('Username can only contain letters and numbers.'),
+			.isAlphanumeric(),
 		check('Password', 'Password is required').not().isEmpty(),
 		check('Email').isEmail().withMessage('Email is invalid.'),
 		check('Birthday', 'Birthday is required').not().isEmpty(),
@@ -106,12 +130,11 @@ app.post(
 
 		try {
 			let hashedPassword = await bcrypt.hash(req.body.Password, 10);
-			let existingUser = await Users.findOne({ Username: req.body.Username });
-			if (existingUser) {
-				return res.status(400).send(req.body.Username + ' already exists');
-			}
+			let existingUser = await User.findOne({ Username: req.body.Username });
+			if (existingUser)
+				return res.status(400).send(`${req.body.Username} already exists`);
 
-			let newUser = await Users.create({
+			let newUser = await User.create({
 				Username: req.body.Username,
 				Password: hashedPassword,
 				Email: req.body.Email,
@@ -130,60 +153,13 @@ app.post(
 	}
 );
 
-// User Login Route
-app.post('/login', (req, res, next) => {
-	passport.authenticate('local', { session: false }, (error, user, info) => {
-		if (error || !user) {
-			return res.status(400).json({
-				message: 'Invalid username or password',
-				user: user,
-			});
-		}
-		req.login(user, { session: false }, (error) => {
-			if (error) {
-				return res.send(error);
-			}
-			let token = generateJWTToken(user.toJSON());
-			return res.json({ user, token });
-		});
-	})(req, res, next);
-});
-
-// Movies API Routes
-app.get(
-	'/movies',
-	passport.authenticate('jwt', { session: false }),
-	(req, res) => {
-		Movie.find()
-			.then((movies) => res.status(200).json(movies))
-			.catch((err) =>
-				res.status(500).json({ message: 'Error retrieving movies', error: err })
-			);
-	}
-);
-
-app.get(
-	'/movies/:title',
-	passport.authenticate('jwt', { session: false }),
-	(req, res) => {
-		Movie.findOne({ title: req.params.title })
-			.then((movie) => {
-				if (movie) res.status(200).json(movie);
-				else res.status(404).json({ message: 'Movie not found' });
-			})
-			.catch((err) =>
-				res.status(500).json({ message: 'Error retrieving movie', error: err })
-			);
-	}
-);
-
-// Users Routes
+// Get all users
 app.get(
 	'/users',
 	passport.authenticate('jwt', { session: false }),
 	async (req, res) => {
 		try {
-			const users = await Users.find();
+			const users = await User.find();
 			res.json(users);
 		} catch (err) {
 			console.error(err);
@@ -192,35 +168,57 @@ app.get(
 	}
 );
 
-app.get(
-	'/users/:Username',
-	passport.authenticate('jwt', { session: false }),
-	async (req, res) => {
-		try {
-			const user = await Users.findOne({ Username: req.params.Username });
-			if (user) {
-				res.json(user);
-			} else {
-				res.status(404).send('User not found');
-			}
-		} catch (err) {
-			console.error(err);
-			res.status(500).send('Error: ' + err);
-		}
+// Get a specific user by Username
+app.get('/users/:Username', async (req, res) => {
+	try {
+		const user = await User.findOne({ Username: req.params.Username });
+		res.json(user);
+	} catch (err) {
+		console.error(err);
+		res.status(500).send('Error: ' + err);
 	}
-);
+});
 
-// Error-handling middleware
+// Get a specific user by ID
+app.get('/users/:id', async (req, res) => {
+	const userId = req.params.id;
+	try {
+		const user = await User.findById(userId);
+		if (user) res.status(200).json(user);
+		else res.status(404).json({ message: 'User not found' });
+	} catch (err) {
+		console.error(err);
+		res.status(500).send('Error: ' + err);
+	}
+});
+
+// Login Route
+app.post('/login', (req, res, next) => {
+	passport.authenticate('local', { session: false }, (error, user, info) => {
+		if (error || !user) {
+			return res
+				.status(400)
+				.json({ message: 'Invalid username or password', user: user });
+		}
+		req.login(user, { session: false }, (error) => {
+			if (error) return res.send(error);
+			let token = generateJWTToken(user.toJSON());
+			return res.json({ user, token });
+		});
+	})(req, res, next);
+});
+
+// Error Handling Middleware
 app.use((err, req, res, next) => {
-	console.error(`Error: ${err.message}`); // Log the error
+	console.error(`Error: ${err.message}`); // Log the error to the terminal
 	res.status(500).json({
 		message: 'An internal server error occurred!',
 		error: err.message,
 	});
 });
 
-// Start server
-app.listen(process.env.PORT || 3000, () => {
+// Start the server
+app.listen(process.env.PORT || 3000, function () {
 	console.log(
 		'Express server listening on port %d in %s mode',
 		this.address().port,
