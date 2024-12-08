@@ -60,7 +60,7 @@ app.post(
 	'/users',
 	[
 		check('Username')
-			.isLength({ min: 5 })
+			.isLength({ min: 4 })
 			.withMessage('Username must be at least 4 characters long.')
 			.isAlphanumeric()
 			.withMessage('Username can only contain letters and numbers.'),
