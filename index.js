@@ -61,7 +61,7 @@ app.post(
 	[
 		check('Username')
 			.isLength({ min: 5 })
-			.withMessage('Username must be at least 5 characters long.')
+			.withMessage('Username must be at least 4 characters long.')
 			.isAlphanumeric()
 			.withMessage('Username can only contain letters and numbers.'),
 		check('Password', 'Password is required').not().isEmpty(),
@@ -75,19 +75,34 @@ app.post(
 		}
 
 		try {
-			const hashedPassword = await bcrypt.hash(req.body.Password, 10);
-			const existingUser = await User.findOne({ Username: req.body.Username });
-			if (existingUser) {
-				return res.status(400).send(`${req.body.Username} already exists`);
+			// Validate if request body exists and has valid structure
+			if (!req.body || typeof req.body !== 'object') {
+				return res.status(400).json({ message: 'Invalid request body format' });
 			}
 
+			const { Username, Password, Email, Birthday } = req.body;
+
+			// Log the incoming data for debugging
+			console.log('Received user registration data:', req.body);
+
+			// Hash the password
+			const hashedPassword = await bcrypt.hash(Password, 10);
+
+			// Check if the username already exists
+			const existingUser = await User.findOne({ Username });
+			if (existingUser) {
+				return res.status(400).json({ message: `${Username} already exists` });
+			}
+
+			// Create a new user
 			const newUser = await User.create({
-				Username: req.body.Username,
+				Username,
 				Password: hashedPassword,
-				Email: req.body.Email,
-				Birthday: req.body.Birthday,
+				Email,
+				Birthday,
 			});
 
+			// Return the newly created user (exclude sensitive data like Password)
 			res.status(201).json({
 				Username: newUser.Username,
 				Email: newUser.Email,
@@ -95,7 +110,9 @@ app.post(
 			});
 		} catch (error) {
 			console.error('Error during user registration:', error);
-			res.status(500).send('Error: ' + error);
+			res
+				.status(500)
+				.json({ message: 'Internal server error', error: error.message });
 		}
 	}
 );
