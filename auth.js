@@ -24,7 +24,7 @@ let generateJWTToken = (user) => {
 module.exports = (expressApp) => {
 	expressApp.post('/login', (req, res) => {
 		passport.authenticate('local', { session: false }, (error, user, info) => {
-			if (error || !user) {
+			if (error) {
 				console.error('Authentication error:', error);
 				return res.status(400).json({
 					message: 'Authentication failed. Please check your credentials.',
