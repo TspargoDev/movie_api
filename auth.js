@@ -25,7 +25,7 @@ module.exports = (expressApp) => {
 	expressApp.post('/login', (req, res) => {
 		passport.authenticate('local', { session: false }, (error, user, info) => {
 			if (error || !user) {
-				console.log(error);
+				console.error('Authentication error:', error);
 				return res.status(400).json({
 					message: 'Authentication failed. Please check your credentials.',
 					user: user || null, // If user is not found, null will be returned
