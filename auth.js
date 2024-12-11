@@ -1,6 +1,7 @@
 const jwtSecret = 'your_jwt_secret'; // This has to be the same key used in the JWTStrategy
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
+const mongoose = require('mongoose');
 //const express = require('express');
 //const expressApp = express(); // Declare and initialize expressApp here
 
@@ -9,7 +10,7 @@ mongoose.connect(
 	{ useNewUrlParser: true, useUnifiedTopology: true }
 );
 
-require('./passport'); // Assuming passport.js file is configured properly
+require('./passport');
 
 let generateJWTToken = (user) => {
 	return jwt.sign(user, jwtSecret, {
