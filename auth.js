@@ -1,14 +1,8 @@
 const jwtSecret = 'your_jwt_secret'; // This has to be the same key used in the JWTStrategy
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
-const mongoose = require('mongoose');
 //const express = require('express');
 //const expressApp = express(); // Declare and initialize expressApp here
-
-mongoose.connect(
-	'mongodb+srv://movieADmin:IWAfTndNfIdEBSCygSGw@cluster0.zucea.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-	{ useNewUrlParser: true, useUnifiedTopology: true }
-);
 
 require('./passport');
 

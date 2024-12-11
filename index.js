@@ -5,6 +5,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const passport = require('passport');
+require('./passport');
 const { check, validationResult } = require('express-validator');
 const auth = require('./auth');
 
@@ -12,13 +13,14 @@ const app = express();
 const Models = require('./models.js');
 
 const Movie = Models.Movie;
-const User = Models.User;
 
+const User = Models.User;
 // Middleware setup
 app.use(cors());
 auth(app);
 app.use(express.json());
-app.use(morgan('combined'));
+app.use(morgan('common'));
+app.use(bodyParser());
 app.use(
 	'/favicon.ico',
 	express.static(path.join(__dirname, 'public', 'favicon.ico'))
