@@ -6,9 +6,12 @@ const passport = require('passport');
 
 require('./passport');
 
+// Updated generateJWTToken function to handle user serialization properly
 let generateJWTToken = (user) => {
-	return jwt.sign(user, jwtSecret, {
-		subject: user.Username, // Username will be the subject claim
+	// Check if user has toJSON method (e.g., Mongoose or Sequelize instance)
+	const userObj = user.toJSON ? user.toJSON() : user; // Fallback if toJSON is missing
+	return jwt.sign(userObj, jwtSecret, {
+		subject: userObj.Username, // Username will be the subject claim
 		expiresIn: '7d', // Token expires in 7 days
 		algorithm: 'HS256', // Signing algorithm
 	});
@@ -18,8 +21,7 @@ let generateJWTToken = (user) => {
 module.exports = (expressApp) => {
 	expressApp.post('/login', (req, res) => {
 		passport.authenticate('local', { session: false }, (error, user, info) => {
-			if (error) {
-				console.error('Authentication error:', error);
+			if (error || !user) {
 				return res.status(400).json({
 					message: 'Authentication failed. Please check your credentials.',
 					user: user || null, // If user is not found, null will be returned
@@ -36,8 +38,7 @@ module.exports = (expressApp) => {
 				}
 
 				// Generate JWT token after successful login
-
-				const token = generateJWTToken(user.toJSON());
+				const token = generateJWTToken(user); // Pass user directly, without calling toJSON
 
 				return res.json({ user, token });
 			});
