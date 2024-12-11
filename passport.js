@@ -14,28 +14,30 @@ passport.use(
 			passwordField: 'password',
 		},
 		async (username, password, callback) => {
-			console.log(`${username} ${password}`);
-			await Users.findOne({ username: username })
-				.then((user) => {
-					if (!user) {
-						console.log('incorrect username');
-						return callback(null, false, {
-							message: 'Incorrect username or password.',
-						});
-					}
-					if (!user.validatePassword(password)) {
-						console.log('incorrect password');
-						return callback(null, false, { message: 'Incorrect password.' });
-					}
-					console.log('finished');
-					return callback(null, user);
-				})
-				.catch((error) => {
-					if (error) {
-						console.log(error);
-						return callback(error);
-					}
-				});
+			try {
+				console.log(`Attempting to authenticate user: ${username}`);
+
+				const user = await Users.findOne({ username: username });
+				if (!user) {
+					console.log('Incorrect username');
+					return callback(null, false, {
+						message: 'Incorrect username or password.',
+					});
+				}
+
+				// Validate password
+				const isValidPassword = await user.validatePassword(password);
+				if (!isValidPassword) {
+					console.log('Incorrect password');
+					return callback(null, false, { message: 'Incorrect password.' });
+				}
+
+				console.log('Authentication successful');
+				return callback(null, user);
+			} catch (error) {
+				console.log('Error in LocalStrategy:', error);
+				return callback(error);
+			}
 		}
 	)
 );
@@ -47,13 +49,19 @@ passport.use(
 			secretOrKey: 'your_jwt_secret',
 		},
 		async (jwtPayload, callback) => {
-			return await Users.findById(jwtPayload._id)
-				.then((user) => {
-					return callback(null, user);
-				})
-				.catch((error) => {
-					return callback(error);
-				});
+			try {
+				const user = await Users.findById(jwtPayload._id);
+				if (!user) {
+					console.log('User not found in JWT strategy');
+					return callback(null, false, { message: 'User not found' });
+				}
+
+				console.log('User found in JWT strategy');
+				return callback(null, user);
+			} catch (error) {
+				console.log('Error in JWTStrategy:', error);
+				return callback(error);
+			}
 		}
 	)
 );
