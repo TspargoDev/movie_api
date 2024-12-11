@@ -42,12 +42,10 @@ module.exports = (expressApp) => {
 				}
 
 				// Generate JWT token after successful login
+
 				const token = generateJWTToken(user.toJSON());
-				return res.json({
-					message: 'Login successful!',
-					user: user,
-					token: token,
-				});
+
+				return res.json({ user, token });
 			});
 		})(req, res); // Ensure passport is called with req and res
 	});
