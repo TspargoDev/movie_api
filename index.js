@@ -3,6 +3,7 @@ const morgan = require('morgan');
 const path = require('path');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const bodyParser = require('express').json;
 const bcrypt = require('bcrypt');
 const passport = require('passport');
 require('./passport');
