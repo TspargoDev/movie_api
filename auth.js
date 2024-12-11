@@ -4,6 +4,11 @@ const passport = require('passport');
 //const express = require('express');
 //const expressApp = express(); // Declare and initialize expressApp here
 
+mongoose.connect(
+	'mongodb+srv://movieADmin:IWAfTndNfIdEBSCygSGw@cluster0.zucea.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+	{ useNewUrlParser: true, useUnifiedTopology: true }
+);
+
 require('./passport'); // Assuming passport.js file is configured properly
 
 let generateJWTToken = (user) => {
