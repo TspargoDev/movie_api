@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const passport = require('passport');
 const { check, validationResult } = require('express-validator');
-const expressApp = require('./auth');
+const auth = require('./auth');
 
 const app = express();
 const Models = require('./models.js');
@@ -16,6 +16,7 @@ const User = Models.User;
 
 // Middleware setup
 app.use(cors());
+auth(app);
 app.use(express.json());
 app.use(morgan('combined'));
 app.use(
@@ -23,7 +24,7 @@ app.use(
 	express.static(path.join(__dirname, 'public', 'favicon.ico'))
 );
 app.use(express.static(path.join(__dirname, 'public')));
-expressApp.use(express.static(path.join(__dirname, 'public')));
+// expressApp.use(express.static(path.join(__dirname, 'public')));
 
 // Database connection
 mongoose.connect(
