@@ -27,7 +27,10 @@ app.use(
 );
 app.use(express.static(path.join(__dirname, 'public')));
 // expressApp.use(express.static(path.join(__dirname, 'public')));
-
+let allowedOrigins = [
+	'http://localhost:3000',
+	'https://myflixtspargo.netlify.app/',
+];
 // Database connection
 mongoose.connect(
 	'mongodb+srv://movieADmin:IWAfTndNfIdEBSCygSGw@cluster0.zucea.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
@@ -37,26 +40,69 @@ mongoose.connect(
 // Routes
 
 // Get all movies
-app.get('/api/movies', async (req, res) => {
+app.get('/movies', async (req, res) => {
 	try {
-		const movies = await Movie.find();
+		const movies = await Movies.find(); // Fetch all movies from MongoDB
+		if (!movies.length) {
+			return res.status(404).send('No movies found');
+		}
 		res.status(200).json(movies);
 	} catch (err) {
-		res.status(500).json({ message: 'Error retrieving movies', error: err });
+		console.error(err);
+		res.status(500).send('Error fetching movies');
 	}
 });
 
-// Get a specific movie by ID
-app.get('/api/movies/:id', async (req, res) => {
-	try {
-		const movie = await Movie.findById(req.params.id);
-		movie
-			? res.status(200).json(movie)
-			: res.status(404).json({ message: 'Movie not found' });
-	} catch (err) {
-		res.status(500).json({ message: 'Error retrieving movie', error: err });
+// Return data about a single movie by title
+app.get(
+	'/movies/:title',
+	passport.authenticate('jwt', { session: false }),
+	async (req, res) => {
+		await Movies.findOne({ title: req.params.title })
+			.then((movie) => {
+				if (!movie) {
+					res.status(404).send('Movie not found');
+				} else {
+					res.json(movie);
+				}
+			})
+			.catch((err) => res.status(500).send('Error: ' + err));
 	}
-});
+);
+
+// Return data about a genre by name
+app.get(
+	'/genres/:name',
+	passport.authenticate('jwt', { session: false }),
+	async (req, res) => {
+		await Movies.findOne({ 'genre.name': req.params.name })
+			.then((movie) => {
+				if (!movie) {
+					res.status(404).send('Genre not found');
+				} else {
+					res.json(movie.genre);
+				}
+			})
+			.catch((err) => res.status(500).send('Error: ' + err));
+	}
+);
+
+// Return data about a director by name
+app.get(
+	'/directors/:name',
+	passport.authenticate('jwt', { session: false }),
+	async (req, res) => {
+		await Movies.findOne({ 'director.name': req.params.name })
+			.then((movie) => {
+				if (!movie) {
+					res.status(404).send('Director not found');
+				} else {
+					res.json(movie.director);
+				}
+			})
+			.catch((err) => res.status(500).send('Error: ' + err));
+	}
+);
 
 // Register a new user
 app.post(
