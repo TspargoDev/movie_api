@@ -46,13 +46,16 @@ app.get(
 	}
 );
 
-// Get movie by title
+// Get movie by ID (_id)
 app.get(
-	"/movies/:title",
+	"/movies/:id",
 	passport.authenticate("jwt", { session: false }),
 	async (req, res) => {
-		await Movies.findOne({ title: req.params.title })
+		await Movies.findById(req.params.id)
 			.then((movie) => {
+				if (!movie) {
+					return res.status(404).send("Movie not found");
+				}
 				res.json(movie);
 			})
 			.catch((err) => {
