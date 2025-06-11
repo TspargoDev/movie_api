@@ -42,7 +42,27 @@ app.get(
 	}
 );
 
-// Get movie by title
+// Get movie by ID (new route for fetching by MongoDB ObjectId)
+app.get(
+	"/movies/id/:id",
+	passport.authenticate("jwt", { session: false }),
+	async (req, res) => {
+		try {
+			const movie = await Movies.findById(req.params.id);
+
+			if (!movie) {
+				return res.status(404).send("Movie not found");
+			}
+
+			res.status(200).json(movie);
+		} catch (err) {
+			console.error("Error fetching movie by ID:", err);
+			res.status(500).send("Error: " + err);
+		}
+	}
+);
+
+// Get movie by title (legacy route, finds by title string)
 app.get(
 	"/movies/:title",
 	passport.authenticate("jwt", { session: false }),
