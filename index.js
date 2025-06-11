@@ -17,10 +17,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan("common"));
 app.use(cors());
-
-// Handle preflight OPTIONS requests for all routes to fix Heroku H10 crash
-app.options("*", cors());
-
 app.use(express.static("public"));
 
 // Auth setup (just require it)
@@ -46,14 +42,20 @@ app.get(
 	}
 );
 
-// Get movie by title
+// Get movie by ID (fixed route)
 app.get(
-	"/movies/:title",
+	"/movies/:id",
 	passport.authenticate("jwt", { session: false }),
 	async (req, res) => {
-		await Movies.findOne({ title: req.params.title })
-			.then((movie) => res.json(movie))
-			.catch((err) => res.status(500).send("Error: " + err));
+		try {
+			const movie = await Movies.findById(req.params.id);
+			if (!movie) {
+				return res.status(404).send("Movie not found");
+			}
+			res.json(movie);
+		} catch (err) {
+			res.status(500).send("Error: " + err);
+		}
 	}
 );
 
