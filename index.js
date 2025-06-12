@@ -136,6 +136,16 @@ app.put(
 	}
 );
 
+app.get(
+	"/users/:username",
+	passport.authenticate("jwt", { session: false }),
+	async (req, res) => {
+		await Users.findOne({ username: req.params.username })
+			.then((updatedUser) => res.json(updatedUser))
+			.catch((err) => res.status(500).send("Error: " + err));
+	}
+);
+
 // Add movie to user's favorites
 app.post(
 	"/users/:username/movies/:movieId",
